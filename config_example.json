@@ -1,5 +1,9 @@
 {
     "telegram": {
-        "token": ""
+        "token": "",
+        "chat_id": ""
+    },
+    "db": {
+        "connect": ""
     }
 }
