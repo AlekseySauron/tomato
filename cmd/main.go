@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
+	"os/signal"
 
 	"github.com/AlekseySauron/tomato/app"
 	_ "github.com/go-sql-driver/mysql"
@@ -20,9 +22,10 @@ func main() {
 		log.Fatal("Ошибка viper", err)
 		return
 	}
-
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, os.Interrupt, os.Kill)
 	application := app.NewApplication()
-	application.Run()
-	defer application.Stop()
-
+	go application.Run()
+	<-signalChan
+	application.Stop()
 }

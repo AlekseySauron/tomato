@@ -3,9 +3,10 @@ package telegrampkg
 import (
 	"fmt"
 	"log"
-	"reflect"
 	"strconv"
+	"time"
 
+	"github.com/AlekseySauron/tomato/models"
 	"github.com/AlekseySauron/tomato/pkg/dbpkg"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/spf13/viper"
@@ -45,72 +46,27 @@ func Start(repo dbpkg.DBRepository) {
 
 	for update := range updates {
 		//if update.Message != nil {
-
-		switch currentStatus {
-		case "start":
-			if update.Message != nil && reflect.TypeOf(update.Message.Text).Kind() == reflect.String && update.Message.Text != "" {
-				if update.Message.Text == "/start" {
-					addNewOrQueue(update)
-					currentStatus = "SelectNewOrQueue"
-				} else {
-					continue
-				}
-			}
-
-			// msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Starting...")
-			// bot.Send(msg)
-
-		case "SelectNewOrQueue":
-			if update.CallbackQuery != nil {
-				callback := tgbotapi.NewCallback(update.CallbackQuery.ID, update.CallbackQuery.Data)
-				if _, err := bot.Request(callback); err != nil {
-					log.Fatal(err)
-				}
-				switch update.CallbackQuery.Data {
-				case "Есть новая задача?":
-					addNew(update)
-
-					currentStatus = "addNew"
-				case "Только проверим очередь":
-
-					//curTask := findCurTask()
-
-					selectTimeout(update)
-					currentStatus = "selectTimeout"
-				default:
-
-				}
-			}
-		case "addNew":
-			if update.Message != nil && reflect.TypeOf(update.Message.Text).Kind() == reflect.String && update.Message.Text != "" {
-				//addNewToDB(update, update.Message.Text)
-
-				selectTimeout(update)
-				currentStatus = "selectTimeout"
-			}
-
-		case "selectTimeout":
-			if update.CallbackQuery != nil {
-				callback := tgbotapi.NewCallback(update.CallbackQuery.ID, update.CallbackQuery.Data)
-				if _, err := bot.Request(callback); err != nil {
-					log.Fatal(err)
-				}
-				switch update.CallbackQuery.Data {
-				case "20 min":
-					startTask(update, 20)
-					currentStatus = "startTask20"
-				case "25 min":
-					startTask(update, 25)
-					currentStatus = "startTask25"
-				default:
-
-				}
-			}
-
-		default:
+		user, _ := repo.GetUser(getChatId(update))
+		defer repo.Save(user)
+		if update.Message.IsCommand() {
+			commandHandler(user, update.Message.Command())
+			continue
 		}
-
+		if update.CallbackQuery != nil {
+			callbackHandler(user, update.CallbackData())
+			continue
+		}
 	}
+}
+
+func commandHandler(u *models.User, command string) {
+	go func(u models.User) {
+		time.Sleep(25 * time.Minute)
+		sendMessage(u.TelegramID, "Task done", nil)
+	}(*u)
+}
+
+func callbackHandler(u *models.User, data string) {
 
 }
 
