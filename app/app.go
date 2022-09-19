@@ -2,6 +2,7 @@ package app
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 
 	"github.com/AlekseySauron/tomato/pkg/dbpkg"
@@ -36,5 +37,6 @@ func (a *Application) getDB() dbpkg.DBRepository {
 }
 
 func (a *Application) Stop() {
+	fmt.Println("Stopping...")
 	a.repo.Close()
 }
